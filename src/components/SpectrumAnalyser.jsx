@@ -95,18 +95,23 @@ const SpectrumAnalyser = ({
       ctx.fillStyle = '#f5f5f5';
       ctx.fillRect(0, 0, width, height);
 
-      // Calculate bar width
-      const effectiveBarCount = Math.min(barCount, bufferLength);
-      const barWidth = width / effectiveBarCount;
+      // Calculate which frequency bins to display
+      const sampleRate = getAudioContext().sampleRate;
+      const nyquist = sampleRate / 2;
+
+      // Only show bins up to maxFrequency
+      const maxBinIndex = Math.floor((maxFrequency / nyquist) * bufferLength);
+      const binsToShow = Math.min(maxBinIndex, bufferLength);
+      const barWidth = width / binsToShow;
 
       // Draw frequency bars
-      for (let i = 0; i < effectiveBarCount; i++) {
+      for (let i = 0; i < binsToShow; i++) {
         const barHeight = (dataArray[i] / 255) * height;
         const x = i * barWidth;
         const y = height - barHeight;
 
         // Color gradient based on frequency
-        const hue = (i / effectiveBarCount) * 240; // Blue to red
+        const hue = (i / binsToShow) * 240; // Blue to red
         ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
         ctx.fillRect(x, y, barWidth - 1, barHeight);
       }
@@ -116,9 +121,6 @@ const SpectrumAnalyser = ({
         ctx.fillStyle = '#333';
         ctx.font = '11px monospace';
         ctx.textAlign = 'center';
-
-        const sampleRate = getAudioContext().sampleRate;
-        const nyquist = sampleRate / 2;
 
         // Draw labels at key frequencies with better spacing
         const allFrequencies = [100, 200, 500, 1000, 2000, 5000, 10000];
@@ -130,9 +132,10 @@ const SpectrumAnalyser = ({
         let lastX = -minSpacing;
 
         labelFrequencies.forEach(freq => {
+          // Calculate the bin index for this frequency
           const binIndex = Math.floor((freq / nyquist) * bufferLength);
-          const normalizedIndex = (binIndex / bufferLength) * effectiveBarCount;
-          const x = normalizedIndex * barWidth;
+          // Calculate x position based on bin index within our displayed range
+          const x = (binIndex / binsToShow) * width;
 
           if (x >= 0 && x <= width && (x - lastX) >= minSpacing) {
             visibleLabels.push({ freq, x });

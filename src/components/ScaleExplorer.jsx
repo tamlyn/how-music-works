@@ -41,9 +41,11 @@ const ScaleExplorer = ({
     setTimeout(() => setPlayingNote(null), 800);
   };
 
-  // Generate piano keys (2 octaves)
+  // Generate piano keys (2 octaves starting from C below the root note's octave)
   const generatePianoKeys = () => {
-    const startMidi = Math.floor(rootNote / 12) * 12;
+    // Start from C of the octave below to show more context
+    const octaveNumber = Math.floor(rootNote / 12);
+    const startMidi = (octaveNumber - 1) * 12; // Start from previous octave's C
     const keys = [];
 
     for (let i = 0; i < 24; i++) {

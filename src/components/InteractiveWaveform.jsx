@@ -34,7 +34,10 @@ const InteractiveWaveform = ({
       ctx.lineWidth = 2;
       ctx.beginPath();
 
-      const cycles = 3; // Number of complete cycles to show
+      // Scale cycles based on frequency (more cycles for higher frequencies)
+      // Map frequency range to 1-5 cycles for good visibility
+      const normalizedFreq = (frequency - minFreq) / (maxFreq - minFreq);
+      const cycles = 1 + normalizedFreq * 4; // 1-5 cycles
       const amplitude = height * 0.4;
       const centerY = height / 2;
 

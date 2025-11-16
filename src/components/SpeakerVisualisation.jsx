@@ -24,14 +24,14 @@ const SpeakerVisualisation = ({
     if (showParticles && speakerCanvasRef.current) {
       const canvas = speakerCanvasRef.current;
       const width = canvas.width;
-      const speakerCenterX = 80;
-      const speakerRadius = 50;
+      const height = canvas.height;
+      const coneEndX = 30 + 40 + 30 + 80; // speakerLeft + magnet + coil + cone
 
-      // Create particles in front of speaker, distributed horizontally
+      // Create particles in front of cone, distributed horizontally
       particlesRef.current = Array.from({ length: particleCount }, (_, i) => ({
-        x: (speakerCenterX + speakerRadius + 20) + (i / particleCount) * (width - speakerCenterX - speakerRadius - 40),
-        y: canvas.height / 2 + (Math.random() - 0.5) * 100,
-        baseY: canvas.height / 2 + (Math.random() - 0.5) * 100,
+        x: coneEndX + 20 + (i / particleCount) * (width - coneEndX - 40),
+        y: height / 2 + (Math.random() - 0.5) * 60,
+        baseY: height / 2 + (Math.random() - 0.5) * 60,
         phase: Math.random() * Math.PI * 2,
       }));
     }
@@ -135,59 +135,70 @@ const SpeakerVisualisation = ({
     ctx.fillStyle = '#f5f5f5';
     ctx.fillRect(0, 0, width, height);
 
-    const speakerCenterX = 80;
-    const speakerRadius = 50;
-    const movement = amplitude * 10;
+    const time = Date.now() / 1000;
 
-    // Draw speaker enclosure
-    ctx.fillStyle = '#2c3e50';
-    ctx.fillRect(20, centerY - 70, 40, 140);
+    // Slow down cone movement significantly (100x slower than actual frequency)
+    const slowMotionFactor = 100;
+    const coneMovement = Math.sin(time * (frequency / slowMotionFactor) * 2 * Math.PI) * 20 * (isPlaying ? 1 : 0);
 
-    // Draw speaker surround (outer ring)
-    ctx.fillStyle = '#34495e';
+    // Speaker dimensions
+    const speakerLeft = 30;
+    const speakerWidth = 100;
+    const speakerCenterX = speakerLeft + speakerWidth;
+    const magnetWidth = 40;
+    const coneWidth = 80;
+
+    // Draw magnet (dark grey rectangle on the left)
+    ctx.fillStyle = '#555';
+    ctx.fillRect(speakerLeft, centerY - 50, magnetWidth, 100);
+
+    // Draw coil (lighter grey in the middle with stripes)
+    ctx.fillStyle = '#888';
+    ctx.fillRect(speakerLeft + magnetWidth, centerY - 30, 30, 60);
+
+    // Draw coil stripes
+    ctx.fillStyle = '#666';
+    for (let i = 0; i < 12; i++) {
+      ctx.fillRect(speakerLeft + magnetWidth, centerY - 30 + i * 5, 30, 2);
+    }
+
+    // Draw cone (triangle extending to the right, moving left-right)
+    const coneLeft = speakerLeft + magnetWidth + 30;
+    const coneRight = coneLeft + coneWidth + coneMovement;
+
+    ctx.fillStyle = '#999';
     ctx.beginPath();
-    ctx.arc(speakerCenterX, centerY, speakerRadius, 0, Math.PI * 2);
+    ctx.moveTo(coneLeft, centerY - 40);
+    ctx.lineTo(coneRight, centerY);
+    ctx.lineTo(coneLeft, centerY + 40);
+    ctx.closePath();
     ctx.fill();
 
-    // Draw speaker cone (animated)
-    const coneRadius = speakerRadius - 10;
-    const gradient = ctx.createRadialGradient(
-      speakerCenterX + movement, centerY, 0,
-      speakerCenterX + movement, centerY, coneRadius
-    );
-    gradient.addColorStop(0, '#95a5a6');
-    gradient.addColorStop(0.5, '#7f8c8d');
-    gradient.addColorStop(1, '#34495e');
+    // Draw cone outline
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
-    ctx.fillStyle = gradient;
+    // Draw dust cap on cone edge
+    ctx.fillStyle = '#666';
     ctx.beginPath();
-    ctx.arc(speakerCenterX + movement, centerY, coneRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Draw dust cap (center dome)
-    ctx.fillStyle = '#34495e';
-    ctx.beginPath();
-    ctx.arc(speakerCenterX + movement, centerY, 15, 0, Math.PI * 2);
+    ctx.ellipse(coneRight, centerY, 8, 25, 0, 0, Math.PI * 2);
     ctx.fill();
 
     // Draw air particles with longitudinal wave motion
-    const time = Date.now() / 1000;
     particlesRef.current.forEach((particle) => {
-      const distanceFromSpeaker = particle.x - speakerCenterX - speakerRadius;
+      const distanceFromCone = particle.x - coneRight;
 
-      // Longitudinal wave: particles move horizontally back and forth
-      const wavePhase = time * frequency / 50 - distanceFromSpeaker / 30;
-      const horizontalOffset = Math.sin(wavePhase) * 8 * (isPlaying ? 1 : 0);
+      // Particles oscillate based on cone position and distance
+      // The wave propagates outward from the cone
+      const wavePhase = (time * (frequency / slowMotionFactor) * 2 * Math.PI) - (distanceFromCone / 40);
+      const horizontalOffset = Math.sin(wavePhase) * 10 * (isPlaying ? 1 : 0);
 
-      // Slightly vary vertical position for visual interest
-      const verticalOffset = Math.sin(wavePhase + particle.phase) * 3;
-
-      particle.y = particle.baseY + verticalOffset;
       const currentX = particle.x + horizontalOffset;
 
-      // Colour intensity based on compression/rarefaction
+      // Vary opacity based on compression/rarefaction
       const density = (Math.sin(wavePhase) + 1) / 2;
-      const alpha = 0.3 + density * 0.4;
+      const alpha = 0.3 + density * 0.3;
 
       ctx.fillStyle = `rgba(66, 133, 244, ${alpha})`;
       ctx.beginPath();
@@ -195,23 +206,11 @@ const SpeakerVisualisation = ({
       ctx.fill();
     });
 
-    // Draw pressure wave bands (compression and rarefaction)
-    const wavelength = Math.max(50, 300 / (frequency / 100));
-
-    for (let i = 0; i < 8; i++) {
-      const x = (speakerCenterX + speakerRadius) + (time * 80 % wavelength) + i * wavelength;
-      if (x < width && isPlaying) {
-        const alpha = 0.1 + 0.05 * Math.sin(time * 3 + i);
-        ctx.fillStyle = `rgba(66, 133, 244, ${alpha})`;
-        ctx.fillRect(x - 3, centerY - 70, 6, 140);
-      }
-    }
-
     // Labels
     ctx.fillStyle = '#333';
     ctx.font = '14px sans-serif';
-    ctx.fillText('Speaker', speakerCenterX - 25, centerY + 85);
-    ctx.fillText('Air particles', 250, 30);
+    ctx.fillText('Speaker', speakerLeft + 10, centerY + 70);
+    ctx.fillText('Air particles', 300, 30);
     ctx.fillText('→ Pressure waves →', width - 200, 30);
   };
 
