@@ -95,13 +95,48 @@ Comprehensive sandbox combining all tools:
 - Scale player
 - Tuning system comparison
 
-## Implementation Notes
+## Setup and Development
 
-### Technologies Suggested
-- **Framework**: Next.js with MDX support
+### Prerequisites
+- Node.js 18+ and npm
+
+### Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+The development server will start at `http://localhost:5173`
+
+## Technologies
+
+- **Framework**: Vite + React
+- **Content**: MDX for the article
 - **Audio**: Web Audio API for sound generation
-- **Visualization**: Canvas API or D3.js for waveforms and spectra
+- **Visualization**: Canvas API for waveforms and spectra
 - **UI**: React components with interactive controls
+
+## Deployment
+
+The site is automatically deployed to GitHub Pages when changes are pushed to the `main` branch.
+
+### GitHub Pages Setup
+
+1. Go to your repository Settings → Pages
+2. Set Source to "GitHub Actions"
+3. The workflow will automatically build and deploy on push to main
+
+The site will be available at: `https://[username].github.io/how-music-works/`
 
 ### Audio Generation Approach
 ```javascript
