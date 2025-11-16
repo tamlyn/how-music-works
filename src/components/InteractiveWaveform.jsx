@@ -16,7 +16,7 @@ const InteractiveWaveform = ({
   const analyserRef = useRef(null);
   const animationRef = useRef(null);
 
-  // Draw waveform on canvas
+  // Draw static waveform on canvas (phase-locked)
   useEffect(() => {
     if (!showWaveform || !canvasRef.current) return;
 
@@ -25,7 +25,7 @@ const InteractiveWaveform = ({
     const width = canvas.width;
     const height = canvas.height;
 
-    // Generate simple sine wave visualization
+    // Generate static sine wave visualization (phase-locked at left edge)
     const drawWaveform = () => {
       ctx.fillStyle = '#f5f5f5';
       ctx.fillRect(0, 0, width, height);
@@ -39,8 +39,9 @@ const InteractiveWaveform = ({
       const centerY = height / 2;
 
       for (let x = 0; x < width; x++) {
+        // Phase starts at 0 at the left edge (always zero crossing going up)
         const angle = (x / width) * cycles * 2 * Math.PI;
-        const y = centerY + Math.sin(angle) * amplitude;
+        const y = centerY - Math.sin(angle) * amplitude;
 
         if (x === 0) {
           ctx.moveTo(x, y);
@@ -58,6 +59,12 @@ const InteractiveWaveform = ({
       ctx.moveTo(0, centerY);
       ctx.lineTo(width, centerY);
       ctx.stroke();
+
+      // Draw zero crossing marker at left edge
+      ctx.fillStyle = '#0066cc';
+      ctx.beginPath();
+      ctx.arc(0, centerY, 4, 0, Math.PI * 2);
+      ctx.fill();
     };
 
     drawWaveform();
@@ -95,11 +102,6 @@ const InteractiveWaveform = ({
     gainNodeRef.current = gainNode;
     analyserRef.current = analyser;
     setIsPlaying(true);
-
-    // If showing waveform, animate it with real audio data
-    if (showWaveform && canvasRef.current) {
-      animateWaveform(analyser);
-    }
   };
 
   const stopSound = () => {
@@ -110,66 +112,7 @@ const InteractiveWaveform = ({
       analyserRef.current = null;
     }
 
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
-    }
-
     setIsPlaying(false);
-  };
-
-  const animateWaveform = (analyser) => {
-    if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
-
-    analyser.fftSize = 2048;
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const draw = () => {
-      animationRef.current = requestAnimationFrame(draw);
-      analyser.getByteTimeDomainData(dataArray);
-
-      ctx.fillStyle = '#f5f5f5';
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#0066cc';
-      ctx.beginPath();
-
-      const sliceWidth = width / bufferLength;
-      let x = 0;
-
-      for (let i = 0; i < bufferLength; i++) {
-        const v = dataArray[i] / 128.0;
-        const y = (v * height) / 2;
-
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-
-        x += sliceWidth;
-      }
-
-      ctx.lineTo(width, height / 2);
-      ctx.stroke();
-
-      // Draw center line
-      ctx.strokeStyle = '#ccc';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, height / 2);
-      ctx.lineTo(width, height / 2);
-      ctx.stroke();
-    };
-
-    draw();
   };
 
   // Update frequency while playing

@@ -24,10 +24,12 @@ const SpeakerVisualisation = ({
     if (showParticles && speakerCanvasRef.current) {
       const canvas = speakerCanvasRef.current;
       const width = canvas.width;
+      const speakerCenterX = 80;
+      const speakerRadius = 50;
 
-      // Create particles in front of speaker
+      // Create particles in front of speaker, distributed horizontally
       particlesRef.current = Array.from({ length: particleCount }, (_, i) => ({
-        x: 150 + (i / particleCount) * (width - 200),
+        x: (speakerCenterX + speakerRadius + 20) + (i / particleCount) * (width - speakerCenterX - speakerRadius - 40),
         y: canvas.height / 2 + (Math.random() - 0.5) * 100,
         baseY: canvas.height / 2 + (Math.random() - 0.5) * 100,
         phase: Math.random() * Math.PI * 2,
@@ -133,59 +135,83 @@ const SpeakerVisualisation = ({
     ctx.fillStyle = '#f5f5f5';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw speaker cone
-    const speakerX = 50;
-    const speakerWidth = 80;
-    const movement = amplitude * 15;
+    const speakerCenterX = 80;
+    const speakerRadius = 50;
+    const movement = amplitude * 10;
 
-    // Speaker body
-    ctx.fillStyle = '#333';
-    ctx.fillRect(speakerX - speakerWidth / 2, centerY - 60, speakerWidth, 120);
+    // Draw speaker enclosure
+    ctx.fillStyle = '#2c3e50';
+    ctx.fillRect(20, centerY - 70, 40, 140);
 
-    // Speaker cone (moving)
-    ctx.fillStyle = '#666';
+    // Draw speaker surround (outer ring)
+    ctx.fillStyle = '#34495e';
     ctx.beginPath();
-    ctx.moveTo(speakerX + speakerWidth / 2 + movement, centerY - 50);
-    ctx.lineTo(speakerX + speakerWidth / 2 + 30 + movement, centerY);
-    ctx.lineTo(speakerX + speakerWidth / 2 + movement, centerY + 50);
-    ctx.closePath();
+    ctx.arc(speakerCenterX, centerY, speakerRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw air particles
+    // Draw speaker cone (animated)
+    const coneRadius = speakerRadius - 10;
+    const gradient = ctx.createRadialGradient(
+      speakerCenterX + movement, centerY, 0,
+      speakerCenterX + movement, centerY, coneRadius
+    );
+    gradient.addColorStop(0, '#95a5a6');
+    gradient.addColorStop(0.5, '#7f8c8d');
+    gradient.addColorStop(1, '#34495e');
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(speakerCenterX + movement, centerY, coneRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw dust cap (center dome)
+    ctx.fillStyle = '#34495e';
+    ctx.beginPath();
+    ctx.arc(speakerCenterX + movement, centerY, 15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw air particles with longitudinal wave motion
     const time = Date.now() / 1000;
-    particlesRef.current.forEach((particle, i) => {
-      // Wave motion moving away from speaker
-      const distanceFromSpeaker = particle.x - (speakerX + speakerWidth);
-      const waveOffset = Math.sin(time * frequency / 50 - distanceFromSpeaker / 20) * 15;
+    particlesRef.current.forEach((particle) => {
+      const distanceFromSpeaker = particle.x - speakerCenterX - speakerRadius;
 
-      particle.y = particle.baseY + waveOffset * (isPlaying ? 1 : 0);
+      // Longitudinal wave: particles move horizontally back and forth
+      const wavePhase = time * frequency / 50 - distanceFromSpeaker / 30;
+      const horizontalOffset = Math.sin(wavePhase) * 8 * (isPlaying ? 1 : 0);
 
-      ctx.fillStyle = `rgba(66, 133, 244, ${0.3 + Math.abs(waveOffset) / 30})`;
+      // Slightly vary vertical position for visual interest
+      const verticalOffset = Math.sin(wavePhase + particle.phase) * 3;
+
+      particle.y = particle.baseY + verticalOffset;
+      const currentX = particle.x + horizontalOffset;
+
+      // Colour intensity based on compression/rarefaction
+      const density = (Math.sin(wavePhase) + 1) / 2;
+      const alpha = 0.3 + density * 0.4;
+
+      ctx.fillStyle = `rgba(66, 133, 244, ${alpha})`;
       ctx.beginPath();
-      ctx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
+      ctx.arc(currentX, particle.y, 3, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    // Draw pressure wave lines
-    ctx.strokeStyle = 'rgba(66, 133, 244, 0.2)';
-    ctx.lineWidth = 2;
-    const wavelength = 400 / (frequency / 100);
+    // Draw pressure wave bands (compression and rarefaction)
+    const wavelength = Math.max(50, 300 / (frequency / 100));
 
-    for (let i = 0; i < 5; i++) {
-      const x = (speakerX + speakerWidth) + (time * 100 % wavelength) + i * wavelength;
-      if (x < width) {
-        ctx.beginPath();
-        ctx.moveTo(x, centerY - 80);
-        ctx.lineTo(x, centerY + 80);
-        ctx.stroke();
+    for (let i = 0; i < 8; i++) {
+      const x = (speakerCenterX + speakerRadius) + (time * 80 % wavelength) + i * wavelength;
+      if (x < width && isPlaying) {
+        const alpha = 0.1 + 0.05 * Math.sin(time * 3 + i);
+        ctx.fillStyle = `rgba(66, 133, 244, ${alpha})`;
+        ctx.fillRect(x - 3, centerY - 70, 6, 140);
       }
     }
 
     // Labels
     ctx.fillStyle = '#333';
     ctx.font = '14px sans-serif';
-    ctx.fillText('Speaker', speakerX - 20, centerY + 80);
-    ctx.fillText('Air particles', 200, 30);
+    ctx.fillText('Speaker', speakerCenterX - 25, centerY + 85);
+    ctx.fillText('Air particles', 250, 30);
     ctx.fillText('→ Pressure waves →', width - 200, 30);
   };
 

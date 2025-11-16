@@ -172,11 +172,9 @@ const ScaleExplorer = ({
                   fontWeight: key.isRoot ? 'bold' : 'normal',
                 }}
               >
-                {key.isInScale && (
-                  <span style={{ color: key.isPlaying ? 'white' : '#333' }}>
-                    {key.noteName}
-                  </span>
-                )}
+                <span style={{ color: key.isPlaying ? 'white' : key.isInScale ? '#333' : '#999' }}>
+                  {key.noteName}
+                </span>
               </div>
             ))}
 

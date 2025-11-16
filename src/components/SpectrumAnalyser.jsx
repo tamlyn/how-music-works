@@ -114,30 +114,43 @@ const SpectrumAnalyser = ({
       // Draw frequency labels if enabled
       if (showFrequencyLabels) {
         ctx.fillStyle = '#333';
-        ctx.font = '12px monospace';
+        ctx.font = '11px monospace';
         ctx.textAlign = 'center';
 
         const sampleRate = getAudioContext().sampleRate;
         const nyquist = sampleRate / 2;
 
-        // Draw labels at key frequencies
-        const labelFrequencies = [100, 500, 1000, 2000, 5000, 10000].filter(f => f <= maxFrequency);
+        // Draw labels at key frequencies with better spacing
+        const allFrequencies = [100, 200, 500, 1000, 2000, 5000, 10000];
+        const labelFrequencies = allFrequencies.filter(f => f <= maxFrequency);
+
+        // Only show labels that are far enough apart (at least 60px)
+        const minSpacing = 60;
+        const visibleLabels = [];
+        let lastX = -minSpacing;
 
         labelFrequencies.forEach(freq => {
           const binIndex = Math.floor((freq / nyquist) * bufferLength);
           const normalizedIndex = (binIndex / bufferLength) * effectiveBarCount;
           const x = normalizedIndex * barWidth;
 
-          if (x >= 0 && x <= width) {
-            ctx.fillText(`${freq}Hz`, x, height - 5);
-
-            // Draw tick mark
-            ctx.strokeStyle = '#999';
-            ctx.beginPath();
-            ctx.moveTo(x, height - 20);
-            ctx.lineTo(x, height);
-            ctx.stroke();
+          if (x >= 0 && x <= width && (x - lastX) >= minSpacing) {
+            visibleLabels.push({ freq, x });
+            lastX = x;
           }
+        });
+
+        visibleLabels.forEach(({ freq, x }) => {
+          const label = freq >= 1000 ? `${freq / 1000}kHz` : `${freq}Hz`;
+          ctx.fillText(label, x, height - 5);
+
+          // Draw tick mark
+          ctx.strokeStyle = '#999';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x, height - 20);
+          ctx.lineTo(x, height);
+          ctx.stroke();
         });
       }
     };
