@@ -1,6 +1,12 @@
 import React from 'react'
 
-// Placeholder component wrapper
+// Import implemented components
+import InteractiveWaveformComponent from './InteractiveWaveform'
+import HarmonicSeriesVisualizerComponent from './HarmonicSeriesVisualizer'
+import IntervalExplorerComponent from './IntervalExplorer'
+import ScaleExplorerComponent from './ScaleExplorer'
+
+// Placeholder component wrapper for components not yet implemented
 const Placeholder = ({ name, description, ...props }) => (
   <div className="interactive-component">
     {description && <p className="component-description">{description}</p>}
@@ -19,15 +25,17 @@ const Placeholder = ({ name, description, ...props }) => (
   </div>
 )
 
-// All interactive components as placeholders
-export const InteractiveWaveform = (props) => <Placeholder name="Interactive Waveform" {...props} />
-export const HarmonicSeriesVisualizer = (props) => <Placeholder name="Harmonic Series Visualizer" {...props} />
+// Export implemented components
+export const InteractiveWaveform = InteractiveWaveformComponent
+export const HarmonicSeriesVisualizer = HarmonicSeriesVisualizerComponent
+export const IntervalExplorer = IntervalExplorerComponent
+export const ScaleExplorer = ScaleExplorerComponent
+
+// Placeholder exports for components not yet implemented
 export const TimbreComparison = (props) => <Placeholder name="Timbre Comparison" {...props} />
-export const IntervalExplorer = (props) => <Placeholder name="Interval Explorer" {...props} />
 export const TuningSystemComparison = (props) => <Placeholder name="Tuning System Comparison" {...props} />
 export const TwelveTETCalculator = (props) => <Placeholder name="12-TET Calculator" {...props} />
 export const ChordBuilder = (props) => <Placeholder name="Chord Builder" {...props} />
-export const ScaleExplorer = (props) => <Placeholder name="Scale Explorer" {...props} />
 export const MelodyAnalyzer = (props) => <Placeholder name="Melody Analyzer" {...props} />
 export const MicrotonalExplorer = (props) => <Placeholder name="Microtonal Explorer" {...props} />
 export const MusicLabPlayground = (props) => <Placeholder name="Music Lab Playground" {...props} />
